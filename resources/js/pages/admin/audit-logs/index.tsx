@@ -1,6 +1,6 @@
 import { Head } from '@inertiajs/react';
 import { History } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/atoms/ui/card';
 import type { BreadcrumbItem } from '@/types';
 
 type AuditLog = {

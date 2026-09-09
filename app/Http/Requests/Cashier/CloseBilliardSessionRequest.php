@@ -19,6 +19,7 @@ class CloseBilliardSessionRequest extends FormRequest
     {
         return [
             'ended_at' => ['nullable', 'date'],
+            'payment_amount' => ['nullable', 'integer', 'min:0'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }

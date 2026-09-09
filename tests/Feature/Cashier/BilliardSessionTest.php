@@ -4,6 +4,7 @@ use App\Enums\UserRole;
 use App\Models\BilliardSession;
 use App\Models\BilliardTable;
 use App\Models\BilliardTableType;
+use App\Models\CashierShift;
 use App\Models\HourlyRate;
 use App\Models\TablePackage;
 use App\Models\TableRate;
@@ -24,6 +25,7 @@ test('cashiers cannot access the admin billiard session page', function () {
 
 test('cashiers can open a session and occupy the table', function () {
     $user = User::factory()->create(['role' => UserRole::Cashier]);
+    CashierShift::factory()->open()->create(['user_id' => $user->id]);
     $type = BilliardTableType::factory()->create();
     $table = BilliardTable::factory()->create(['billiard_table_type_id' => $type->id, 'status' => 'available']);
     $rate = TableRate::factory()->create(['billiard_table_type_id' => $type->id, 'hourly_rate' => 60000]);
@@ -47,6 +49,7 @@ test('cashiers can open a session and occupy the table', function () {
 
 test('cashiers can open a POS session with customer details', function () {
     $user = User::factory()->create(['role' => UserRole::Cashier]);
+    CashierShift::factory()->open()->create(['user_id' => $user->id]);
     $type = BilliardTableType::factory()->create();
     $table = BilliardTable::factory()->create(['billiard_table_type_id' => $type->id, 'status' => 'available']);
     TableRate::factory()->create(['billiard_table_type_id' => $type->id]);
@@ -69,6 +72,7 @@ test('the session automatically snapshots the hourly rate for the arrival time',
     Carbon::setTestNow(Carbon::parse('2026-09-08 13:00:00'));
 
     $user = User::factory()->create(['role' => UserRole::Cashier]);
+    CashierShift::factory()->open()->create(['user_id' => $user->id]);
     $type = BilliardTableType::factory()->create();
     $table = BilliardTable::factory()->create(['billiard_table_type_id' => $type->id, 'status' => 'available']);
     TableRate::factory()->create(['billiard_table_type_id' => $type->id, 'hourly_rate' => 75000]);
@@ -112,6 +116,7 @@ test('a table cannot have two active sessions', function () {
 
 test('closing an hourly session calculates the rounded total and frees the table', function () {
     $user = User::factory()->create(['role' => UserRole::Cashier]);
+    CashierShift::factory()->open()->create(['user_id' => $user->id]);
     $type = BilliardTableType::factory()->create();
     $table = BilliardTable::factory()->create(['billiard_table_type_id' => $type->id, 'status' => 'occupied']);
     $rate = TableRate::factory()->create([
@@ -121,6 +126,7 @@ test('closing an hourly session calculates the rounded total and frees the table
         'rounding_minutes' => 30,
     ]);
     $session = BilliardSession::factory()->create([
+        'user_id' => $user->id,
         'billiard_table_id' => $table->id,
         'table_rate_id' => $rate->id,
         'started_at' => now()->subMinutes(75),
@@ -128,7 +134,7 @@ test('closing an hourly session calculates the rounded total and frees the table
 
     $this->actingAs($user)->post(route('cashier.billiard-sessions.close', $session), [
         'ended_at' => now()->toDateTimeString(),
-    ])->assertRedirect(route('cashier.billiard-sessions.index'));
+    ])->assertRedirect(); // Inertia::back() redirects to referer
 
     expect($session->fresh()->status)->toBe('closed')
         ->and($session->fresh()->total_amount)->toBe(90000)
@@ -137,10 +143,12 @@ test('closing an hourly session calculates the rounded total and frees the table
 
 test('closing a package session uses the package price', function () {
     $user = User::factory()->create(['role' => UserRole::Cashier]);
+    CashierShift::factory()->open()->create(['user_id' => $user->id]);
     $type = BilliardTableType::factory()->create();
     $table = BilliardTable::factory()->create(['billiard_table_type_id' => $type->id, 'status' => 'occupied']);
     $package = TablePackage::factory()->create(['billiard_table_type_id' => $type->id, 'price' => 125000]);
     $session = BilliardSession::factory()->create([
+        'user_id' => $user->id,
         'billiard_table_id' => $table->id,
         'table_package_id' => $package->id,
     ]);

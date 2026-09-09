@@ -31,6 +31,16 @@ class DatabaseSeeder extends Seeder
             ],
         );
 
+        User::query()->updateOrCreate(
+            ['email' => 'kasir@example.com'],
+            [
+                'name' => 'Kasir Budi',
+                'password' => 'password',
+                'role' => UserRole::Cashier,
+                'email_verified_at' => now(),
+            ],
+        );
+
         $types = [
             'Standard' => 'Meja biliar standar untuk permainan harian.',
             'Premium' => 'Meja dengan kualitas kain dan fasilitas premium.',

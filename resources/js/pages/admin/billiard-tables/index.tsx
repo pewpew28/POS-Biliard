@@ -1,12 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/atoms/ui/badge';
+import { Button } from '@/components/atoms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/card';
 import { index as tablesIndex, create, destroy, edit } from '@/actions/App/Http/Controllers/Admin/BilliardTableController';
 import type { BreadcrumbItem } from '@/types';
-import { DeleteConfirmationDialog } from '@/components/delete-confirmation-dialog';
+import { DeleteConfirmationDialog } from '@/components/organisms/delete-confirmation-dialog';
 
 type BilliardTable = {
     id: number;

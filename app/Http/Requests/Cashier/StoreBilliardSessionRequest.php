@@ -22,7 +22,8 @@ class StoreBilliardSessionRequest extends FormRequest
         return [
             'billiard_table_id' => ['required', 'exists:billiard_tables,id'],
             'customer_name' => ['required', 'string', 'max:120'],
-            'duration_hours' => ['required', 'integer', 'min:1', 'max:12'],
+            'duration_hours' => ['nullable', 'integer', 'min:1', 'max:12'],
+            'table_package_id' => ['nullable', 'exists:table_packages,id'],
             'notes' => ['nullable', 'string', 'max:1000'],
         ];
     }
@@ -44,6 +45,16 @@ class StoreBilliardSessionRequest extends FormRequest
                     return;
                 }
 
+                if ($this->filled('table_package_id')) {
+                    $matchesType = \App\Models\TablePackage::query()
+                        ->whereKey($this->integer('table_package_id'))
+                        ->where('billiard_table_type_id', $table->billiard_table_type_id)
+                        ->where('is_active', true)
+                        ->exists();
+                    if (! $matchesType) {
+                        $validator->errors()->add('table_package_id', 'Paket tidak valid untuk tipe meja ini.');
+                    }
+                }
             },
         ];
     }

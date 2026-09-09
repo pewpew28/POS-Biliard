@@ -1,16 +1,16 @@
 import { Form, Head } from '@inertiajs/react';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
-import Heading from '@/components/heading';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import Heading from '@/components/molecules/heading';
+import InputError from '@/components/molecules/input-error';
+import PasswordInput from '@/components/molecules/password-input';
+import { Button } from '@/components/atoms/ui/button';
+import { Label } from '@/components/atoms/ui/label';
 import { edit } from '@/routes/security';
-import type { Props as ManagePasskeysProps } from '@/components/manage-passkeys';
-import ManagePasskeys from '@/components/manage-passkeys';
-import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
-import ManageTwoFactor from '@/components/manage-two-factor';
+import type { Props as ManagePasskeysProps } from '@/components/organisms/manage-passkeys';
+import ManagePasskeys from '@/components/organisms/manage-passkeys';
+import type { Props as ManageTwoFactorProps } from '@/components/organisms/manage-two-factor';
+import ManageTwoFactor from '@/components/organisms/manage-two-factor';
 
 // oxfmt-ignore
 type Props = {

@@ -1,9 +1,9 @@
 import { Form, Head } from '@inertiajs/react';
-import InputError from '@/components/input-error';
-import PasswordInput from '@/components/password-input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Spinner } from '@/components/ui/spinner';
+import InputError from '@/components/molecules/input-error';
+import PasswordInput from '@/components/molecules/password-input';
+import { Button } from '@/components/atoms/ui/button';
+import { Label } from '@/components/atoms/ui/label';
+import { Spinner } from '@/components/atoms/ui/spinner';
 import { store } from '@/routes/password/confirm';
 import {
     index as confirmOptions,

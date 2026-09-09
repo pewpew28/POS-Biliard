@@ -1,9 +1,9 @@
 import { Link, usePage } from '@inertiajs/react';
 import { BookOpen, CircleDot, Clock3, Database, FolderGit2, History, LayoutGrid, Package, Tags } from 'lucide-react';
-import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
-import { NavMain, type NavSection } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
+import AppLogo from '@/components/molecules/app-logo';
+import { NavFooter } from '@/components/molecules/nav-footer';
+import { NavMain, type NavSection } from '@/components/molecules/nav-main';
+import { NavUser } from '@/components/molecules/nav-user';
 import {
     Sidebar,
     SidebarContent,
@@ -12,7 +12,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-} from '@/components/ui/sidebar';
+} from '@/components/atoms/ui/sidebar';
 import { index as billiardTables } from '@/actions/App/Http/Controllers/Admin/BilliardTableController';
 import TypeController from '@/actions/App/Http/Controllers/Admin/BilliardTableTypeController';
 import TableRateController from '@/actions/App/Http/Controllers/Admin/TableRateController';

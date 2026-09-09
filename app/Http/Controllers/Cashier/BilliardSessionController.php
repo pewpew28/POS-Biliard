@@ -7,6 +7,7 @@ use App\Http\Requests\Cashier\CloseBilliardSessionRequest;
 use App\Http\Requests\Cashier\StoreBilliardSessionRequest;
 use App\Models\BilliardSession;
 use App\Models\BilliardTable;
+use App\Models\CashierShift;
 use App\Models\HourlyRate;
 use App\Models\TablePackage;
 use App\Models\TableRate;
@@ -34,30 +35,79 @@ class BilliardSessionController extends Controller
     {
         $now = now();
 
-        return Inertia::render($page, [
-            'tables' => BilliardTable::query()
-                ->with(['billiardTableType', 'billiardSessions' => fn ($query) => $query->where('status', 'open')->with(['tableRate', 'tablePackage'])])
-                ->orderBy('name')
-                ->get()
-                ->map(function (BilliardTable $table) use ($now): array {
-                    $rate = $this->resolveRate($table, $now);
+        $tables = BilliardTable::query()
+            ->with(['billiardTableType', 'billiardSessions' => fn ($query) => $query->where('status', 'open')->with(['billiardTable', 'tableRate', 'hourlyRate', 'tablePackage', 'user'])])
+            ->orderBy('name')
+            ->get()
+            ->map(function (BilliardTable $table) use ($now): array {
+                $rate = $this->resolveRate($table, $now);
+                $sessions = $table->billiardSessions->map(fn ($s) => $this->mapSession($s));
 
-                    return [
-                        ...$table->toArray(),
-                        'effective_rate' => $rate ? [
-                            'id' => $rate->id,
-                            'name' => $rate->name,
-                            'hourly_rate' => $rate->hourly_rate,
-                            'source' => $rate instanceof HourlyRate ? 'hourly' : 'regular',
-                        ] : null,
-                    ];
-                }),
-            'sessions' => BilliardSession::query()
-                ->where('status', 'open')
-                ->with(['billiardTable', 'tableRate', 'hourlyRate', 'tablePackage', 'user'])
-                ->latest('started_at')
+                return [
+                    'id' => $table->id,
+                    'name' => $table->name,
+                    'status' => $table->status,
+                    'billiard_table_type' => [
+                        'id' => $table->billiardTableType->id,
+                        'name' => $table->billiardTableType->name,
+                    ],
+                    'billiard_sessions' => $sessions,
+                    'effective_rate' => $rate ? [
+                        'id' => $rate->id,
+                        'name' => $rate->name,
+                        'hourly_rate' => $rate->hourly_rate,
+                        'source' => $rate instanceof HourlyRate ? 'hourly' : 'regular',
+                    ] : null,
+                ];
+            });
+
+        $sessions = BilliardSession::query()
+            ->where('status', 'open')
+            ->with(['billiardTable', 'tableRate', 'hourlyRate', 'tablePackage', 'user'])
+            ->latest('started_at')
+            ->get()
+            ->map(fn ($s) => $this->mapSession($s));
+
+        return Inertia::render($page, [
+            'tables' => $tables,
+            'sessions' => $sessions,
+            'packages' => TablePackage::query()
+                ->where('is_active', true)
+                ->with('billiardTableType')
+                ->orderBy('billiard_table_type_id')
+                ->orderBy('duration_minutes')
                 ->get(),
         ]);
+    }
+
+    private function mapSession(BilliardSession $session): array
+    {
+        return [
+            'id' => $session->id,
+            'billiard_table' => [
+                'id' => $session->billiardTable->id,
+                'name' => $session->billiardTable->name,
+            ],
+            'customer_name' => $session->customer_name,
+            'planned_hours' => $session->planned_hours,
+            'started_at' => $session->started_at->toIso8601String(),
+            'table_rate' => $session->tableRate ? [
+                'id' => $session->tableRate->id,
+                'name' => $session->tableRate->name,
+                'hourly_rate' => $session->tableRate->hourly_rate,
+            ] : null,
+            'hourly_rate' => $session->hourlyRate ? [
+                'id' => $session->hourlyRate->id,
+                'name' => $session->hourlyRate->name,
+                'hourly_rate' => $session->hourlyRate->hourly_rate,
+            ] : null,
+            'table_package' => $session->tablePackage ? [
+                'id' => $session->tablePackage->id,
+                'name' => $session->tablePackage->name,
+                'duration_minutes' => $session->tablePackage->duration_minutes,
+                'price' => $session->tablePackage->price,
+            ] : null,
+        ];
     }
 
     public function create(): Response
@@ -76,6 +126,12 @@ class BilliardSessionController extends Controller
 
     public function store(StoreBilliardSessionRequest $request): RedirectResponse
     {
+        abort_unless(
+            CashierShift::where('user_id', $request->user()->id)->where('status', 'open')->exists(),
+            422,
+            'Shift belum dibuka. Silakan buka shift terlebih dahulu.',
+        );
+
         $session = DB::transaction(function () use ($request): BilliardSession {
             $table = BilliardTable::query()->lockForUpdate()->findOrFail($request->integer('billiard_table_id'));
 
@@ -85,21 +141,40 @@ class BilliardSessionController extends Controller
                 'Meja sedang tidak tersedia.',
             );
 
-            $rate = $request->filled('table_rate_id')
-                ? TableRate::query()->whereKey($request->integer('table_rate_id'))->where('billiard_table_type_id', $table->billiard_table_type_id)->first()
-                : $this->resolveRate($table, now());
-            abort_unless($rate !== null, 422, 'Tarif aktif untuk meja ini belum tersedia.');
+            if ($request->filled('table_package_id')) {
+                $package = TablePackage::query()
+                    ->whereKey($request->integer('table_package_id'))
+                    ->where('billiard_table_type_id', $table->billiard_table_type_id)
+                    ->where('is_active', true)
+                    ->first();
+                abort_unless($package !== null, 422, 'Paket tidak valid untuk tipe meja ini.');
 
-            $session = BilliardSession::create([
-                'billiard_table_id' => $table->id,
-                'user_id' => $request->user()->id,
-                'customer_name' => $request->string('customer_name')->toString(),
-                'hourly_rate_id' => $rate instanceof HourlyRate ? $rate->id : null,
-                'table_rate_id' => $rate instanceof TableRate ? $rate->id : null,
-                'planned_hours' => $request->integer('duration_hours') ?: 1,
-                'status' => 'open',
-                'started_at' => now(),
-            ]);
+                $session = BilliardSession::create([
+                    'billiard_table_id' => $table->id,
+                    'user_id' => $request->user()->id,
+                    'customer_name' => $request->string('customer_name')->toString(),
+                    'table_package_id' => $package->id,
+                    'planned_hours' => (int) ceil($package->duration_minutes / 60),
+                    'status' => 'open',
+                    'started_at' => now(),
+                ]);
+            } else {
+                $rate = $request->filled('table_rate_id')
+                    ? TableRate::query()->whereKey($request->integer('table_rate_id'))->where('billiard_table_type_id', $table->billiard_table_type_id)->first()
+                    : $this->resolveRate($table, now());
+                abort_unless($rate !== null, 422, 'Tarif aktif untuk meja ini belum tersedia.');
+
+                $session = BilliardSession::create([
+                    'billiard_table_id' => $table->id,
+                    'user_id' => $request->user()->id,
+                    'customer_name' => $request->string('customer_name')->toString(),
+                    'hourly_rate_id' => $rate instanceof HourlyRate ? $rate->id : null,
+                    'table_rate_id' => $rate instanceof TableRate ? $rate->id : null,
+                    'planned_hours' => $request->filled('duration_hours') ? $request->integer('duration_hours') : null,
+                    'status' => 'open',
+                    'started_at' => now(),
+                ]);
+            }
 
             $table->update(['status' => 'occupied']);
 
@@ -107,13 +182,19 @@ class BilliardSessionController extends Controller
         });
 
         AuditLogger::record('created', $session, 'Membuka sesi '.$session->billiardTable->name, null, $session->toArray());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Sesi meja berhasil dibuka.']);
+        session()->flash('toast', ['type' => 'success', 'message' => 'Sesi meja berhasil dibuka.']);
 
         return to_route($request->routeIs('cashier.pos.store') ? 'cashier.pos.index' : 'cashier.billiard-sessions.index');
     }
 
-    public function close(CloseBilliardSessionRequest $request, BilliardSession $billiardSession): RedirectResponse
+    public function close(CloseBilliardSessionRequest $request, BilliardSession $billiardSession)
     {
+        abort_unless(
+            CashierShift::where('user_id', $request->user()->id)->where('status', 'open')->exists(),
+            422,
+            'Shift belum dibuka. Silakan buka shift terlebih dahulu.',
+        );
+
         abort_if($billiardSession->status !== 'open', 422, 'Sesi sudah ditutup.');
 
         $session = DB::transaction(function () use ($request, $billiardSession): BilliardSession {
@@ -138,9 +219,15 @@ class BilliardSessionController extends Controller
         });
 
         AuditLogger::record('updated', $session, 'Menutup sesi '.$session->billiardTable->name, null, $session->toArray());
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Sesi meja berhasil ditutup.']);
 
-        return to_route($request->routeIs('cashier.pos.close') ? 'cashier.pos.index' : 'cashier.billiard-sessions.index');
+        // Record sale to shift
+        CashierShift::recordSale($session, $session->total_amount);
+
+        session()->flash('toast', ['type' => 'success', 'message' => 'Sesi meja berhasil ditutup.']);
+
+        session()->flash('toast', ['type' => 'success', 'message' => 'Pembayaran berhasil! Struk telah dicetak.']);
+
+        return Inertia::back();
     }
 
     private function calculateTotal(BilliardSession $session, int $durationMinutes): int

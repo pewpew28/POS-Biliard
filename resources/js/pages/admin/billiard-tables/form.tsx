@@ -1,10 +1,10 @@
 import { Head, Link, Form } from '@inertiajs/react';
 import { ArrowLeft } from 'lucide-react';
 import { create, index, store, update } from '@/actions/App/Http/Controllers/Admin/BilliardTableController';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/atoms/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/atoms/ui/card';
+import { Input } from '@/components/atoms/ui/input';
+import { Label } from '@/components/atoms/ui/label';
 
 type BilliardTable = {
     id: number;

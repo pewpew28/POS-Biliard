@@ -12,8 +12,11 @@ class LoginResponse implements LoginResponseContract
     {
         $user = $request->user();
 
-        return redirect()->intended(
-            $user?->role === UserRole::Cashier ? '/cashier/pos' : config('fortify.home'),
-        );
+        // Cashier goes directly to POS, shift modal will show if needed
+        if ($user?->role === UserRole::Cashier) {
+            return redirect()->intended('/cashier/pos');
+        }
+
+        return redirect()->intended(config('fortify.home'));
     }
 }

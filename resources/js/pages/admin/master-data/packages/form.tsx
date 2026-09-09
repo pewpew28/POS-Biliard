@@ -1,8 +1,8 @@
 import { Form, Head, Link } from '@inertiajs/react';
 import Controller from '@/actions/App/Http/Controllers/Admin/TablePackageController';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/atoms/ui/button';
+import { Input } from '@/components/atoms/ui/input';
+import { Label } from '@/components/atoms/ui/label';
 type Package = { id: number; billiard_table_type_id: number | null; name: string; duration_minutes: number; price: number; notes: string | null };
 type Type = { id: number; name: string };
 export default function FormPage({ package: item, types }: { package: Package | null; types: Type[] }) { const edit = Boolean(item); return <><Head title={edit ? 'Edit Paket' : 'Tambah Paket'} /><div className="flex flex-1 flex-col gap-6 p-4 md:p-6"><h1 className="text-2xl font-semibold">{edit ? 'Edit Paket Tarif' : 'Tambah Paket Tarif'}</h1><Form {...(edit ? Controller.update.form(item!.id) : Controller.store.form())} className="flex max-w-2xl flex-col gap-5"><div className="flex flex-col gap-2"><Label>Type Meja (Opsional)</Label><select name="billiard_table_type_id" defaultValue={item?.billiard_table_type_id ?? ''} className="border-input bg-background h-9 rounded-md border px-3 text-sm"><option value="">Semua type</option>{types.map(type => <option key={type.id} value={type.id}>{type.name}</option>)}</select></div>{[['name','Nama Paket','text',item?.name],['duration_minutes','Durasi (menit)','number',item?.duration_minutes],['price','Harga','number',item?.price]].map(([name,label,type,value]) => <div className="flex flex-col gap-2" key={String(name)}><Label htmlFor={String(name)}>{String(label)}</Label><Input id={String(name)} name={String(name)} type={String(type)} defaultValue={value as string | number | undefined} /></div>)}<div className="flex flex-col gap-2"><Label>Catatan</Label><textarea name="notes" defaultValue={item?.notes ?? ''} rows={3} className="border-input bg-background rounded-md border px-3 py-2 text-sm" /></div><div className="flex justify-end gap-3"><Button variant="outline" asChild><Link href={Controller.index().url}>Batal</Link></Button><Button type="submit">Simpan</Button></div></Form></div></>; }

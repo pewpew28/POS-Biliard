@@ -1,6 +1,6 @@
 import { createInertiaApp } from '@inertiajs/react';
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
+import { Toaster } from '@/components/atoms/ui/sonner';
+import { TooltipProvider } from '@/components/atoms/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
 import { useFlashToast } from '@/hooks/use-flash-toast';
 import AppLayout from '@/layouts/app-layout';
@@ -20,7 +20,7 @@ void createInertiaApp({
                 return AuthLayout;
             case name.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
-            case name.startsWith('cashier/pos'):
+            case name.startsWith('cashier/'):
                 return PosLayout;
             default:
                 return AppLayout;

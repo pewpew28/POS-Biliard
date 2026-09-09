@@ -5,8 +5,8 @@ import {
     DropdownMenuItem,
     DropdownMenuLabel,
     DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { UserInfo } from '@/components/user-info';
+} from '@/components/atoms/ui/dropdown-menu';
+import { UserInfo } from '@/components/molecules/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { edit } from '@/routes/profile';

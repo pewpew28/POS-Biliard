@@ -2,10 +2,10 @@ import type { UrlMethodPair } from '@inertiajs/core';
 import { router } from '@inertiajs/react';
 import { usePasskeyVerify } from '@laravel/passkeys/react';
 import { KeyRound } from 'lucide-react';
-import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Spinner } from '@/components/ui/spinner';
+import InputError from '@/components/molecules/input-error';
+import { Button } from '@/components/atoms/ui/button';
+import { Separator } from '@/components/atoms/ui/separator';
+import { Spinner } from '@/components/atoms/ui/spinner';
 
 type Props = {
     routes?: {

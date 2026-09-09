@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\CashierShift;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,6 +36,25 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $currentShift = null;
+
+        if ($request->user()?->role?->value === 'cashier') {
+            $shift = CashierShift::where('user_id', $request->user()->id)
+                ->where('status', 'open')
+                ->first();
+
+            if ($shift) {
+                $currentShift = [
+                    'id' => $shift->id,
+                    'opened_at' => $shift->opened_at->toIso8601String(),
+                    'initial_balance' => $shift->initial_balance,
+                    'current_balance' => $shift->getCurrentBalance(),
+                    'total_sales' => $shift->total_sales,
+                    'total_transactions' => $shift->total_transactions,
+                ];
+            }
+        }
+
         return [
             ...parent::share($request),
             'name' => config('app.name'),
@@ -42,6 +62,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'current_shift' => $currentShift,
         ];
     }
 }
